@@ -94,6 +94,12 @@ def main():
         "sudo apt install gitleaks   (or) go install github.com/gitleaks/gitleaks/v8@latest",
     )
 
+    # git-dumper: apt package on recent Kali, otherwise Go install
+    found, path, version = check_binary("git-dumper", ["git-dumper", "--version"])
+    report(
+        "git-dumper", found, path, version,
+        "sudo apt install git-dumper   (or) go install github.com/arthaud/git-dumper@latest",
+    )
     # wpscan: Ruby gem, preinstalled on Kali; needs ruby + gem present
     ruby_found, ruby_path, ruby_version = check_binary("ruby", ["ruby", "--version"])
     report(
