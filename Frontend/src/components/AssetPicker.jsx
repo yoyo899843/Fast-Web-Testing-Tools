@@ -48,7 +48,15 @@ export default function AssetPicker({ workspaceId, selected, onSelectedChange })
       <table border="1" cellPadding="4" style={{ marginTop: '0.5rem', width: '100%' }}>
         <thead>
           <tr>
-            <th></th>
+            <th>
+              <input
+                type="checkbox"
+                checked={assets.length > 0 && selected.size === assets.length}
+                onChange={toggleAll}
+                disabled={assets.length === 0}
+                title="全選"
+              />
+            </th>
             <th>URL</th>
             <th>存活</th>
             <th>最後檢測時間</th>

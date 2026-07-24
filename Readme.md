@@ -8,8 +8,8 @@
 docker compose up --build
 ```
 
-- 前端:http://127.0.0.1:5173
-- 後端 API 文件:http://127.0.0.1:8000/docs
+- 前端:http://127.0.0.1:8081
+- 後端 API 文件:http://127.0.0.1:8001/docs
 
 ## 目前功能(MVP)
 

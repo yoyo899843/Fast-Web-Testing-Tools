@@ -6,6 +6,7 @@ export default function WorkspaceListPage() {
   const [workspaces, setWorkspaces] = useState([])
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [error, setError] = useState(null)
 
   async function load() {
     const res = await fetch(`${API_BASE_URL}/workspaces`)
@@ -28,6 +29,20 @@ export default function WorkspaceListPage() {
     await load()
   }
 
+  async function remove(ws) {
+    if (!window.confirm(`確定要刪除工作區「${ws.name}」嗎?底下的資產、匯入紀錄、所有工具的執行結果都會一併刪除,無法復原。`)) {
+      return
+    }
+    setError(null)
+    const res = await fetch(`${API_BASE_URL}/workspaces/${ws.id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      setError(body.detail || `刪除失敗 (HTTP ${res.status})`)
+      return
+    }
+    await load()
+  }
+
   return (
     <div>
       <h2>工作區</h2>
@@ -43,30 +58,39 @@ export default function WorkspaceListPage() {
           建立工作區
         </button>
       </div>
-      <table border="1" cellPadding="4" style={{ width: '100%' }}>
-        <thead>
-          <tr>
-            <th>名稱</th>
-            <th>描述</th>
-            <th>資產數</th>
-            <th>Job 數</th>
-            <th>建立時間</th>
-          </tr>
-        </thead>
-        <tbody>
-          {workspaces.map((ws) => (
-            <tr key={ws.id}>
-              <td>
-                <Link to={`/workspaces/${ws.id}/assets`}>{ws.name}</Link>
-              </td>
-              <td>{ws.description ?? '-'}</td>
-              <td>{ws.asset_count}</td>
-              <td>{ws.job_count}</td>
-              <td>{ws.created_at}</td>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {workspaces.length === 0 ? (
+        <p>還沒有任何工作區,在上面填名稱建立第一個工作區吧。</p>
+      ) : (
+        <table border="1" cellPadding="4" style={{ width: '100%' }}>
+          <thead>
+            <tr>
+              <th>名稱</th>
+              <th>描述</th>
+              <th>資產數</th>
+              <th>Job 數</th>
+              <th>建立時間</th>
+              <th></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {workspaces.map((ws) => (
+              <tr key={ws.id}>
+                <td>
+                  <Link to={`/workspaces/${ws.id}/assets`}>{ws.name}</Link>
+                </td>
+                <td>{ws.description ?? '-'}</td>
+                <td>{ws.asset_count}</td>
+                <td>{ws.job_count}</td>
+                <td>{ws.created_at}</td>
+                <td>
+                  <button onClick={() => remove(ws)}>刪除</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   )
 }
