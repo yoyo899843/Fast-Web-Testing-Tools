@@ -3,3 +3,10 @@ url.txt
 venv
 __pycache__
 *.txt
+!requirements.txt
+
+# SQLite / local dev artifacts (Docker Compose persists the DB in a named
+# volume instead; these only show up if the backend is ever run outside Docker)
+Backend/data/
+Backend/*.db
+Backend/*.db-*
