@@ -28,6 +28,8 @@ export default function WorkspaceLayout() {
         <Link to={`/workspaces/${workspaceId}/git-dump`}>Git-dump</Link>
         {' | '}
         <Link to={`/workspaces/${workspaceId}/whatweb`}>WhatWeb</Link>
+        {' | '}
+        <Link to={`/workspaces/${workspaceId}/sqlmap`}>SQLMap</Link>
       </nav>
       <div style={{ padding: '1rem' }}>
         <Outlet />

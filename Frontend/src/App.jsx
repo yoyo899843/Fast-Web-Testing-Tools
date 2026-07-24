@@ -6,6 +6,7 @@ import LivenessPage from './pages/LivenessPage'
 import DirsearchPage from './pages/DirsearchPage'
 import GitDumpPage from './pages/GitDumpPage'
 import WhatwebPage from './pages/WhatwebPage'
+import SqlmapPage from './pages/SqlmapPage'
 import JobPage from './pages/JobPage'
 import TerminalPage from './pages/TerminalPage'
 
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="dirsearch" element={<DirsearchPage />} />
           <Route path="git-dump" element={<GitDumpPage />} />
           <Route path="whatweb" element={<WhatwebPage />} />
+          <Route path="sqlmap" element={<SqlmapPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

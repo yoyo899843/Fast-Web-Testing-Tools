@@ -8,6 +8,7 @@ import LivenessResultsPanel from '../components/LivenessResultsPanel'
 import DirsearchResultsPanel from '../components/DirsearchResultsPanel'
 import GitDumpResultsPanel from '../components/GitDumpResultsPanel'
 import WhatwebResultsPanel from '../components/WhatwebResultsPanel'
+import SqlmapResultsPanel from '../components/SqlmapResultsPanel'
 
 export default function JobPage() {
   const { jobId } = useParams()
@@ -43,6 +44,7 @@ export default function JobPage() {
       {ended && job?.type === 'dirsearch' && <DirsearchResultsPanel jobId={jobId} />}
       {ended && job?.type === 'git-dump' && <GitDumpResultsPanel jobId={jobId} />}
       {ended && job?.type === 'whatweb' && <WhatwebResultsPanel jobId={jobId} />}
+      {ended && job?.type === 'sqlmap' && <SqlmapResultsPanel jobId={jobId} />}
     </div>
   )
 }
