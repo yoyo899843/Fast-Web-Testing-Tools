@@ -12,6 +12,7 @@
 docker compose up --build -d
 ```
 
+**注意：此環境因為授予 root shell，對外開放**
 - 前端:http://127.0.0.1:8081
 - 後端 API 文件:http://127.0.0.1:8001/docs
 
