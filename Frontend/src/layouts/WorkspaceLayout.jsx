@@ -10,11 +10,6 @@ const RECON_NAV = [
   { to: 'git-dump', glyph: '⤓', label: 'Git-dump 還原' },
 ]
 
-const VERIFY_NAV = [
-  { to: 'sqlmap', glyph: '⨁', label: 'SQLMap 注入' },
-  { to: 'wp2shell', glyph: '⌘', label: 'wp2shell' },
-]
-
 const ACTIVE_STATUSES = new Set(['pending', 'running'])
 
 export default function WorkspaceLayout() {
@@ -64,15 +59,6 @@ export default function WorkspaceLayout() {
           <div className="side-section">檢測流程</div>
           <nav className="side-nav">
             {RECON_NAV.map((item) => (
-              <NavLink key={item.to} to={`${base}/${item.to}`} className="side-link">
-                <span className="glyph">{item.glyph}</span>
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-          <div className="side-section">利用驗證</div>
-          <nav className="side-nav">
-            {VERIFY_NAV.map((item) => (
               <NavLink key={item.to} to={`${base}/${item.to}`} className="side-link">
                 <span className="glyph">{item.glyph}</span>
                 {item.label}

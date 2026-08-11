@@ -7,7 +7,7 @@ monorepo：`Backend/`(FastAPI + SQLModel/SQLite) + `Frontend/`(React + Vite)。�
 
 ## Backend 的「工具即 Job」模式
 
-每個資安工具（liveness、dirsearch、git-dump、whatweb、sqlmap、wp2shell）都照同一套模式接上系統，新增一個工具只要照著這個模式加檔案，不用改動核心引擎：
+每個資安工具（liveness、dirsearch、git-dump、whatweb）都照同一套模式接上系統，新增一個工具只要照著這個模式加檔案，不用改動核心引擎：
 
 - `app/models/<tool>.py` — SQLModel table，存該工具的掃描結果（外鍵指向 `jobs.id`）。新 model 要記得加進 `app/db.py` 的 `init_db()` import 清單，`create_all` 才會建表。
 - `app/schemas/<tool>_schemas.py` — pydantic 的 request/response schema。
@@ -16,20 +16,28 @@ monorepo：`Backend/`(FastAPI + SQLModel/SQLite) + `Frontend/`(React + Vite)。�
 
 核心引擎（不用因為新工具而改動）：
 - `app/services/job_engine.py` — `Job` 生命週期（pending → running → completed/failed/cancelled/interrupted）、`JobContext`（log + progress 寫 DB 並透過 `job_broadcast` 推送到 WebSocket）、`JOB_REGISTRY` 追蹤執行中的 job 以支援取消。**要求 `uvicorn --workers 1`**，因為這個 registry 和 WS 訂閱清單是 process-內的記憶體狀態。
-- `app/services/subprocess_job.py` — `run_subprocess()` 跑一支 CLI 工具、把 stdout 逐行導進 job log，可回應取消（SIGTERM→SIGKILL）；`run_per_target()` 是給「對一批 asset 逐一掃描」的工具用的併發控制（dirsearch/whatweb/liveness 這類）。sqlmap 不吃這個，因為它是單一 raw request/URL 貼上去掃，不是對 asset 清單跑。
-- `app/services/workspace_utils.py` — `create_scoped_job()` 驗證 asset_ids 屬於該 workspace 再建 job；不需要 asset 清單的工具（如 sqlmap）直接呼叫 `job_engine.create_job()`。
+- `app/services/subprocess_job.py` — `run_subprocess()` 跑一支 CLI 工具、把 stdout 逐行導進 job log，可回應取消（SIGTERM→SIGKILL）；`run_per_target()` 是給「對一批 asset 逐一掃描」的工具用的併發控制（dirsearch/whatweb/liveness 這類）。
+- `app/services/workspace_utils.py` — `create_scoped_job()` 驗證 asset_ids 屬於該 workspace 再建 job；不需要 asset 清單的工具直接呼叫 `job_engine.create_job()`。
 - `app/ws/job_broadcast.py` + `routers/jobs.py` 的 `/ws/jobs/{job_id}` — job 的即時 log/progress 用這條 WebSocket 推。
 
 其他固定端點：`/workspaces/{id}/jobs`（列表）、`/jobs/{id}`（單筆狀態）、`/jobs/{id}/cancel`。`routers/terminal.py` 是獨立的 `/ws/terminal`，用 `pty.fork()` 開真正的 bash shell，跟 job 系統無關。
+
+## 攻擊性工具（tools/ 目錄）
+
+攻擊性工具不走 job 系統，改放 repo 根的 `tools/`（compose 掛到容器 `/opt/tools`）：
+
+- 每個工具是一個含 `tool.json` 的資料夾（欄位：name/description/dangerous/command/check/args，args 分 value 與 flag 兩型），或頂層單支 `.py`/`.sh`（可用同名 sidecar `.json`）。
+- `GET /tools` 由 `app/services/tools_registry.py` 掃描目錄、用 check 指令探測可用性（60 秒快取）；`POST /tools/refresh` 清快取。
+- 前端 TerminalPage 左側渲染 checklist，組好指令用 `/ws/terminal` 插入提示符，使用者自己按 Enter 執行。
 
 ## Frontend 的對應模式
 
 - `pages/<Tool>Page.jsx` — 表單 + `AssetPicker`（選 asset）或自訂輸入 + `JobHistoryList`；送出後 `navigate(/jobs/:id)`。版面照 `DirsearchPage.jsx` 範例：`.page-header` + `.cols.cols-2`（左「選擇目標」/ 右「掃描設定」card）+「歷史紀錄」card（5 秒自動刷新）。
 - `components/<Tool>ResultsPanel.jsx` — 在 `pages/JobPage.jsx` 的 `RESULTS_PANELS` map 註冊，job 跑完（`ended`）才會顯示；panel 本身不包外層標題（JobPage 提供「掃描結果」card）。
 - `hooks/useJobSocket.js` — 接 `/ws/jobs/{jobId}`，統一提供 `logs`/`progress`/`ended` 給 `JobPage`。
-- 新工具要手動接三處：`App.jsx` 加 route、`layouts/WorkspaceLayout.jsx` 的 `RECON_NAV`/`VERIFY_NAV` 加導覽連結、`pages/JobPage.jsx` 的 `RESULTS_PANELS` + `TOOL_ROUTES` 加對應。
+- 新工具要手動接三處：`App.jsx` 加 route、`layouts/WorkspaceLayout.jsx` 的 `RECON_NAV` 加導覽連結、`pages/JobPage.jsx` 的 `RESULTS_PANELS` + `TOOL_ROUTES` 加對應。
 - 樣式：`index.css` 是唯一設計系統（固定暗色主題），class 詞彙含 `.card`/`.table`/`.badge`/`.chip`/`.tag-2xx~5xx`/`.log-view`/`.toolbar` 等；禁止 `border="1"` 與大段 inline style。時間/大小/複製用 `utils/format.js` 的 `fmtTime`/`fmtBytes`/`copyText`。
 
 ## 已知的資安工具 job type
 
-`liveness`（存活性）、`dirsearch`（目錄爆破）、`git-dump`（git 倉庫還原）、`whatweb`（指紋辨識）、`sqlmap`（SQL injection，貼 raw POST request 走 `-r`，貼 GET URL 走 `-u`，選參數走 `-p`，掃完解析 `--output-dir` 的 log 檔取得注入點）、`wp2shell`（WordPress REST batch SQLi→RCE 利用鏈，貼單一 WP URL；腳本在 `app/services/wp2shell.py`，純 stdlib 用 `sys.executable` 跑，`--test` 檢測 / `--bash --command` 完整利用，handler 讀 `--output` 寫的 JSON 結果檔入庫；侵入性操作，前端 bash 模式有二次確認）。
+`liveness`（存活性）、`dirsearch`（目錄爆破）、`git-dump`（git 倉庫還原）、`whatweb`（指紋辨識）。

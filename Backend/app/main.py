@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import init_db
-from app.routers import assets, dirsearch, git_dump, imports, jobs, sqlmap, terminal, whatweb, wp2shell, workspaces
+from app.routers import assets, dirsearch, git_dump, imports, jobs, terminal, tools, whatweb, workspaces
 from app.services.job_engine import reconcile_interrupted_jobs
 from app.services.job_handlers import load_all_handlers
 
@@ -37,8 +37,7 @@ app.include_router(jobs.router)
 app.include_router(dirsearch.router)
 app.include_router(git_dump.router)
 app.include_router(whatweb.router)
-app.include_router(sqlmap.router)
-app.include_router(wp2shell.router)
+app.include_router(tools.router)
 app.include_router(terminal.router)
 
 

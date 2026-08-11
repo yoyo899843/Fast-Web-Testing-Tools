@@ -1,0 +1,35 @@
+{
+  "name": "wp2shell",
+  "description": "WordPress REST API batch SQLi 利用鏈：檢測是否受影響，或建立管理者帳號、上傳外掛並執行指令。僅對你擁有或已獲授權的站點使用。",
+  "dangerous": true,
+  "command": "python3 /opt/tools/wp2shell/wp2shell.py",
+  "check": ["python3", "/opt/tools/wp2shell/wp2shell.py", "--help"],
+  "args": [
+    {
+      "flag": "--url",
+      "label": "WordPress 站點 URL",
+      "placeholder": "https://wordpress.example.com",
+      "required": true
+    },
+    {
+      "flag": "--test",
+      "label": "僅檢測是否受影響（與 --bash 二擇一）",
+      "type": "flag"
+    },
+    {
+      "flag": "--bash",
+      "label": "完整利用並執行指令（與 --test 二擇一）",
+      "type": "flag"
+    },
+    {
+      "flag": "--command",
+      "label": "要執行的指令（搭配 --bash）",
+      "placeholder": "id"
+    },
+    {
+      "flag": "--insecure",
+      "label": "跳過 SSL 憑證驗證（自簽憑證）",
+      "type": "flag"
+    }
+  ]
+}

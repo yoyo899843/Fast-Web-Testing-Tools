@@ -3,6 +3,7 @@ services:
     build: ./Backend
     volumes:
       - fwtt_data:/data
+      - ./tools:/opt/tools
     ports:
       - "127.0.0.1:8001:8000"
     environment:

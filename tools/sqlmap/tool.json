@@ -1,0 +1,49 @@
+{
+  "name": "sqlmap",
+  "description": "SQL injection 自動檢測與利用。貼上目標 URL（GET 參數）或用 -r 指向攔截下來的 raw request 檔案。",
+  "dangerous": true,
+  "command": "sqlmap --batch",
+  "check": ["sqlmap", "--version"],
+  "args": [
+    {
+      "flag": "-u",
+      "label": "目標 URL",
+      "placeholder": "https://example.com/product?id=1&cat=2"
+    },
+    {
+      "flag": "-r",
+      "label": "raw request 檔案路徑（與 URL 二擇一）",
+      "placeholder": "/tmp/request.txt"
+    },
+    {
+      "flag": "-p",
+      "label": "指定注入參數",
+      "placeholder": "id"
+    },
+    {
+      "flag": "--risk",
+      "label": "Risk (1-3)",
+      "placeholder": "1"
+    },
+    {
+      "flag": "--level",
+      "label": "Level (1-5)",
+      "placeholder": "1"
+    },
+    {
+      "flag": "--dbs",
+      "label": "列舉資料庫",
+      "type": "flag"
+    },
+    {
+      "flag": "--tables",
+      "label": "列舉資料表",
+      "type": "flag"
+    },
+    {
+      "flag": "--os-shell",
+      "label": "取得 OS shell（高侵入）",
+      "type": "flag"
+    }
+  ]
+}

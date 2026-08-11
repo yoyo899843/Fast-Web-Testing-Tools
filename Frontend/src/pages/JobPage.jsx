@@ -9,8 +9,6 @@ import LivenessResultsPanel from '../components/LivenessResultsPanel'
 import DirsearchResultsPanel from '../components/DirsearchResultsPanel'
 import GitDumpResultsPanel from '../components/GitDumpResultsPanel'
 import WhatwebResultsPanel from '../components/WhatwebResultsPanel'
-import SqlmapResultsPanel from '../components/SqlmapResultsPanel'
-import Wp2shellResultsPanel from '../components/Wp2shellResultsPanel'
 import { fmtDuration, fmtTime } from '../utils/format'
 
 const TOOL_ROUTES = {
@@ -18,8 +16,6 @@ const TOOL_ROUTES = {
   dirsearch: { path: 'dirsearch', label: 'Dirsearch' },
   'git-dump': { path: 'git-dump', label: 'Git-dump' },
   whatweb: { path: 'whatweb', label: 'WhatWeb' },
-  sqlmap: { path: 'sqlmap', label: 'SQLMap' },
-  wp2shell: { path: 'wp2shell', label: 'wp2shell' },
 }
 
 const RESULTS_PANELS = {
@@ -27,8 +23,6 @@ const RESULTS_PANELS = {
   dirsearch: DirsearchResultsPanel,
   'git-dump': GitDumpResultsPanel,
   whatweb: WhatwebResultsPanel,
-  sqlmap: SqlmapResultsPanel,
-  wp2shell: Wp2shellResultsPanel,
 }
 
 export default function JobPage() {
