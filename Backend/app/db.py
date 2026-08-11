@@ -28,7 +28,7 @@ def _set_sqlite_pragmas(dbapi_connection, _record):
 
 def init_db() -> None:
     # Import models so their tables are registered on SQLModel.metadata before create_all.
-    from app.models import assets, dirsearch, git_dump, imports, jobs, liveness, sqlmap, whatweb, workspace  # noqa: F401
+    from app.models import assets, dirsearch, git_dump, imports, jobs, liveness, sqlmap, whatweb, wp2shell, workspace  # noqa: F401
 
     SQLModel.metadata.create_all(engine)
 

@@ -11,39 +11,42 @@ export default function WhatwebResultsPanel({ jobId }) {
   }, [jobId])
 
   return (
-    <div style={{ marginTop: '1rem' }}>
-      <h3>結果</h3>
+    <div>
       {results.map((r) => (
-        <details key={r.asset_id} open style={{ marginBottom: '0.75rem' }}>
-          <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+        <details key={r.asset_id} className="group" open>
+          <summary>
             {r.target_url} {r.http_status ? `(HTTP ${r.http_status})` : ''}
           </summary>
-          {r.error_message && <p style={{ color: 'red' }}>{r.error_message}</p>}
-          <table border="1" cellPadding="4" style={{ width: '100%', marginTop: '0.25rem' }}>
-            <thead>
-              <tr>
-                <th>Plugin</th>
-                <th>偵測內容</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(r.plugins).map(([name, detail]) => (
-                <tr key={name}>
-                  <td>{name}</td>
-                  <td>
-                    {Object.entries(detail).map(([key, value]) => (
-                      <div key={key}>
-                        <strong>{key}:</strong> {Array.isArray(value) ? value.join(', ') : JSON.stringify(value)}
-                      </div>
-                    ))}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="group-body">
+            {r.error_message && <div className="alert alert-danger">{r.error_message}</div>}
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Plugin</th>
+                    <th>偵測內容</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(r.plugins).map(([name, detail]) => (
+                    <tr key={name}>
+                      <td>{name}</td>
+                      <td>
+                        {Object.entries(detail).map(([key, value]) => (
+                          <div key={key}>
+                            <strong>{key}:</strong> {Array.isArray(value) ? value.join(', ') : JSON.stringify(value)}
+                          </div>
+                        ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </details>
       ))}
-      {results.length === 0 && <p>沒有結果。</p>}
+      {results.length === 0 && <div className="empty">沒有結果。</div>}
     </div>
   )
 }

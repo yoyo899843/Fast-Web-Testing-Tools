@@ -18,6 +18,8 @@ export default function GitDumpPage() {
 
   useEffect(() => {
     loadJobs()
+    const timer = setInterval(loadJobs, 5000)
+    return () => clearInterval(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId])
 
@@ -34,27 +36,54 @@ export default function GitDumpPage() {
 
   return (
     <div>
-      <h2>Git-dump(偵測暴露的 .git 並下載還原)</h2>
-      <AssetPicker workspaceId={workspaceId} selected={selected} onSelectedChange={setSelected} />
-      <div style={{ marginTop: '1rem' }}>
-        <h3>設定</h3>
-        <label>
-          同時檢測目標數{' '}
-          <input
-            type="number"
-            value={config.target_concurrency}
-            onChange={(e) => setConfig({ ...config, target_concurrency: Number(e.target.value) })}
-          />
-        </label>
-        <div>
-          <button onClick={start} disabled={selected.size === 0}>
-            對選取的 {selected.size} 筆開始 Git-dump
-          </button>
+      <div className="page-header">
+        <h1 className="page-title">Git-dump(偵測暴露的 .git 並下載還原)</h1>
+        <span className="page-desc">偵測網站暴露的 .git 目錄，下載並還原原始碼倉庫</span>
+      </div>
+
+      <div className="cols cols-2">
+        <div className="card">
+          <div className="card-title">選擇目標</div>
+          <div className="card-body">
+            <AssetPicker workspaceId={workspaceId} selected={selected} onSelectedChange={setSelected} />
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-title">掃描設定</div>
+          <div className="card-body">
+            <div className="form-row">
+              <div className="field">
+                <span className="field-label">同時檢測目標數</span>
+                <input
+                  type="number"
+                  value={config.target_concurrency}
+                  onChange={(e) => setConfig({ ...config, target_concurrency: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+            <div className="form-actions">
+              <button className="btn-primary" onClick={start} disabled={selected.size === 0}>
+                對 {selected.size} 筆目標開始掃描
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      <h3 style={{ marginTop: '1.5rem' }}>歷史紀錄</h3>
-      <button onClick={loadJobs}>重新整理</button>
-      <JobHistoryList jobs={jobs} />
+
+      <div className="card">
+        <div className="card-title">
+          歷史紀錄
+          <div className="spacer" />
+          <span className="muted small">每 5 秒自動更新</span>
+          <button className="btn-sm" onClick={loadJobs}>
+            重新整理
+          </button>
+        </div>
+        <div className="card-body">
+          <JobHistoryList jobs={jobs} />
+        </div>
+      </div>
     </div>
   )
 }

@@ -7,7 +7,7 @@ monorepo：`Backend/`(FastAPI + SQLModel/SQLite) + `Frontend/`(React + Vite)。�
 
 ## Backend 的「工具即 Job」模式
 
-每個資安工具（liveness、dirsearch、git-dump、whatweb、sqlmap）都照同一套模式接上系統，新增一個工具只要照著這個模式加檔案，不用改動核心引擎：
+每個資安工具（liveness、dirsearch、git-dump、whatweb、sqlmap、wp2shell）都照同一套模式接上系統，新增一個工具只要照著這個模式加檔案，不用改動核心引擎：
 
 - `app/models/<tool>.py` — SQLModel table，存該工具的掃描結果（外鍵指向 `jobs.id`）。新 model 要記得加進 `app/db.py` 的 `init_db()` import 清單，`create_all` 才會建表。
 - `app/schemas/<tool>_schemas.py` — pydantic 的 request/response schema。
@@ -24,11 +24,12 @@ monorepo：`Backend/`(FastAPI + SQLModel/SQLite) + `Frontend/`(React + Vite)。�
 
 ## Frontend 的對應模式
 
-- `pages/<Tool>Page.jsx` — 表單 + `AssetPicker`（選 asset）或自訂輸入 + `JobHistoryList`；送出後 `navigate(/jobs/:id)`。
-- `components/<Tool>ResultsPanel.jsx` — 在 `pages/JobPage.jsx` 依 `job.type` 條件渲染，job 跑完（`ended`）才會顯示。
+- `pages/<Tool>Page.jsx` — 表單 + `AssetPicker`（選 asset）或自訂輸入 + `JobHistoryList`；送出後 `navigate(/jobs/:id)`。版面照 `DirsearchPage.jsx` 範例：`.page-header` + `.cols.cols-2`（左「選擇目標」/ 右「掃描設定」card）+「歷史紀錄」card（5 秒自動刷新）。
+- `components/<Tool>ResultsPanel.jsx` — 在 `pages/JobPage.jsx` 的 `RESULTS_PANELS` map 註冊，job 跑完（`ended`）才會顯示；panel 本身不包外層標題（JobPage 提供「掃描結果」card）。
 - `hooks/useJobSocket.js` — 接 `/ws/jobs/{jobId}`，統一提供 `logs`/`progress`/`ended` 給 `JobPage`。
-- 新工具要手動接三處：`App.jsx` 加 route、`layouts/WorkspaceLayout.jsx` 加導覽連結、`pages/JobPage.jsx` 加 `ResultsPanel` 條件渲染。
+- 新工具要手動接三處：`App.jsx` 加 route、`layouts/WorkspaceLayout.jsx` 的 `RECON_NAV`/`VERIFY_NAV` 加導覽連結、`pages/JobPage.jsx` 的 `RESULTS_PANELS` + `TOOL_ROUTES` 加對應。
+- 樣式：`index.css` 是唯一設計系統（固定暗色主題），class 詞彙含 `.card`/`.table`/`.badge`/`.chip`/`.tag-2xx~5xx`/`.log-view`/`.toolbar` 等；禁止 `border="1"` 與大段 inline style。時間/大小/複製用 `utils/format.js` 的 `fmtTime`/`fmtBytes`/`copyText`。
 
 ## 已知的資安工具 job type
 
-`liveness`（存活性）、`dirsearch`（目錄爆破）、`git-dump`（git 倉庫還原）、`whatweb`（指紋辨識）、`sqlmap`（SQL injection，貼 raw POST request 走 `-r`，貼 GET URL 走 `-u`，選參數走 `-p`，掃完解析 `--output-dir` 的 log 檔取得注入點）。
+`liveness`（存活性）、`dirsearch`（目錄爆破）、`git-dump`（git 倉庫還原）、`whatweb`（指紋辨識）、`sqlmap`（SQL injection，貼 raw POST request 走 `-r`，貼 GET URL 走 `-u`，選參數走 `-p`，掃完解析 `--output-dir` 的 log 檔取得注入點）、`wp2shell`（WordPress REST batch SQLi→RCE 利用鏈，貼單一 WP URL；腳本在 `app/services/wp2shell.py`，純 stdlib 用 `sys.executable` 跑，`--test` 檢測 / `--bash --command` 完整利用，handler 讀 `--output` 寫的 JSON 結果檔入庫；侵入性操作，前端 bash 模式有二次確認）。

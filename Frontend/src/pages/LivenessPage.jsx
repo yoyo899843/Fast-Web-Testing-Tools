@@ -18,6 +18,8 @@ export default function LivenessPage() {
 
   useEffect(() => {
     loadJobs()
+    const timer = setInterval(loadJobs, 5000)
+    return () => clearInterval(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId])
 
@@ -34,51 +36,78 @@ export default function LivenessPage() {
 
   return (
     <div>
-      <h2>Liveness 存活檢測</h2>
-      <AssetPicker workspaceId={workspaceId} selected={selected} onSelectedChange={setSelected} />
-      <div style={{ marginTop: '1rem' }}>
-        <h3>設定</h3>
-        <label>
-          併發數{' '}
-          <input
-            type="number"
-            value={config.concurrency}
-            onChange={(e) => setConfig({ ...config, concurrency: Number(e.target.value) })}
-          />
-        </label>{' '}
-        <label>
-          逾時(秒){' '}
-          <input
-            type="number"
-            value={config.timeout}
-            onChange={(e) => setConfig({ ...config, timeout: Number(e.target.value) })}
-          />
-        </label>{' '}
-        <label>
-          重試次數{' '}
-          <input
-            type="number"
-            value={config.retries}
-            onChange={(e) => setConfig({ ...config, retries: Number(e.target.value) })}
-          />
-        </label>{' '}
-        <label>
-          每秒請求上限{' '}
-          <input
-            type="number"
-            value={config.rps}
-            onChange={(e) => setConfig({ ...config, rps: Number(e.target.value) })}
-          />
-        </label>
-        <div>
-          <button onClick={start} disabled={selected.size === 0}>
-            對選取的 {selected.size} 筆開始存活檢測
-          </button>
+      <div className="page-header">
+        <h1 className="page-title">Liveness 存活檢測</h1>
+        <span className="page-desc">對資產批次發送 HTTP 請求，更新存活狀態與最後檢測時間</span>
+      </div>
+
+      <div className="cols cols-2">
+        <div className="card">
+          <div className="card-title">選擇目標</div>
+          <div className="card-body">
+            <AssetPicker workspaceId={workspaceId} selected={selected} onSelectedChange={setSelected} />
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-title">掃描設定</div>
+          <div className="card-body">
+            <div className="form-row">
+              <div className="field">
+                <span className="field-label">併發數</span>
+                <input
+                  type="number"
+                  value={config.concurrency}
+                  onChange={(e) => setConfig({ ...config, concurrency: Number(e.target.value) })}
+                />
+              </div>
+              <div className="field">
+                <span className="field-label">逾時(秒)</span>
+                <input
+                  type="number"
+                  value={config.timeout}
+                  onChange={(e) => setConfig({ ...config, timeout: Number(e.target.value) })}
+                />
+              </div>
+              <div className="field">
+                <span className="field-label">重試次數</span>
+                <input
+                  type="number"
+                  value={config.retries}
+                  onChange={(e) => setConfig({ ...config, retries: Number(e.target.value) })}
+                />
+              </div>
+              <div className="field">
+                <span className="field-label">每秒請求上限</span>
+                <input
+                  type="number"
+                  value={config.rps}
+                  onChange={(e) => setConfig({ ...config, rps: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+            <div className="form-actions">
+              <button className="btn-primary" onClick={start} disabled={selected.size === 0}>
+                對 {selected.size} 筆目標開始檢測
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      <h3 style={{ marginTop: '1.5rem' }}>歷史紀錄</h3>
-      <button onClick={loadJobs}>重新整理</button>
-      <JobHistoryList jobs={jobs} />
+
+      <div className="card">
+        <div className="card-title">
+          歷史紀錄
+          <div className="spacer" />
+          <span className="muted small">每 5 秒自動更新</span>
+          <button className="btn-sm" onClick={loadJobs}>
+            重新整理
+          </button>
+        </div>
+        <div className="card-body">
+          <JobHistoryList jobs={jobs} />
+        </div>
+      </div>
     </div>
   )
 }

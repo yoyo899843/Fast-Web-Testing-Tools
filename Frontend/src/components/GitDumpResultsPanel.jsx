@@ -11,9 +11,8 @@ export default function GitDumpResultsPanel({ jobId }) {
   }, [jobId])
 
   return (
-    <div style={{ marginTop: '1rem' }}>
-      <h3>結果</h3>
-      <table border="1" cellPadding="4" style={{ width: '100%' }}>
+    <div className="table-wrap">
+      <table className="table">
         <thead>
           <tr>
             <th>目標</th>
@@ -27,9 +26,15 @@ export default function GitDumpResultsPanel({ jobId }) {
         <tbody>
           {results.map((r) => (
             <tr key={r.asset_id}>
-              <td>{r.target_url}</td>
-              <td style={{ color: r.exposed ? '#e53935' : '#4caf50', fontWeight: 'bold' }}>
-                {r.exposed ? '暴露' : '未暴露'}
+              <td className="cell-main">{r.target_url}</td>
+              <td>
+                {r.exposed ? (
+                  <span className="text-err" style={{ fontWeight: 600 }}>
+                    暴露
+                  </span>
+                ) : (
+                  <span className="text-ok">未暴露</span>
+                )}
               </td>
               <td>{r.dump_path ?? '-'}</td>
               <td>{r.file_count ?? '-'}</td>

@@ -52,12 +52,24 @@ export default function TerminalPage() {
   }, [])
 
   return (
-    <div>
-      <h2>Container Shell</h2>
-      <p style={{ fontSize: '0.85rem', color: '#888' }}>
-        這是後端 app container 內部的互動 shell,已安裝 dirsearch/gitleaks/sqlmap/wpscan/git-dumper。
-      </p>
-      <div ref={containerRef} style={{ height: '500px', background: '#000' }} />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '14px 20px' }}>
+      <div className="page-header" style={{ marginBottom: '10px' }}>
+        <h1 className="page-title">Container Shell</h1>
+        <span className="page-desc">
+          這是後端 app container 內部的互動 shell,已安裝 dirsearch/gitleaks/sqlmap/wpscan/git-dumper。
+        </span>
+      </div>
+      <div
+        ref={containerRef}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          background: '#000',
+          border: '1px solid var(--border)',
+          borderRadius: '8px',
+          padding: '4px',
+        }}
+      />
     </div>
   )
 }

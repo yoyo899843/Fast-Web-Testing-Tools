@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { API_BASE_URL } from '../apiConfig'
+import { fmtTime } from '../utils/format'
 
 export default function AssetsPage() {
   const { workspaceId } = useParams()
@@ -69,89 +70,130 @@ export default function AssetsPage() {
 
   return (
     <div>
-      <h2>URL 匯入</h2>
-      <textarea
-        rows={8}
-        style={{ width: '100%' }}
-        placeholder="每行一個 URL"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
-      <div style={{ margin: '0.5rem 0' }}>
-        <button onClick={submitPaste} disabled={busy || !text.trim()}>
-          匯入貼上內容
-        </button>{' '}
-        <label>
-          或上傳檔案(.txt/.csv):{' '}
-          <input type="file" accept=".txt,.csv" onChange={submitFile} disabled={busy} />
-        </label>
+      <div className="page-header">
+        <h1 className="page-title">資產管理</h1>
+        <span className="page-desc">匯入 URL 清單，並檢視存活狀態</span>
       </div>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {summary && (
-        <div>
-          <p>
-            總筆數 {summary.total_rows} - 有效 {summary.valid_count} - 重複 {summary.duplicate_count} - 無效{' '}
-            {summary.invalid_count}
-          </p>
-          {summary.errors.length > 0 && (
-            <table border="1" cellPadding="4">
+
+      <div className="card">
+        <div className="card-title">URL 匯入</div>
+        <div className="card-body">
+          <textarea
+            rows={8}
+            style={{ width: '100%' }}
+            placeholder="每行一個 URL"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          <div className="form-actions">
+            <button className="btn-primary" onClick={submitPaste} disabled={busy || !text.trim()}>
+              匯入貼上內容
+            </button>
+            <label className="form-check">
+              或上傳檔案(.txt/.csv):
+              <input type="file" accept=".txt,.csv" onChange={submitFile} disabled={busy} />
+            </label>
+          </div>
+          {error && <div className="alert alert-danger">{error}</div>}
+          {summary && (
+            <div>
+              <div className="kv">
+                <span>
+                  總筆數 <b>{summary.total_rows}</b>
+                </span>
+                <span>
+                  有效 <b>{summary.valid_count}</b>
+                </span>
+                <span>
+                  重複 <b>{summary.duplicate_count}</b>
+                </span>
+                <span>
+                  無效 <b>{summary.invalid_count}</b>
+                </span>
+              </div>
+              {summary.errors.length > 0 && (
+                <div className="table-wrap">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>原始值</th>
+                        <th>錯誤原因</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.errors.map((err) => (
+                        <tr key={err.row_index}>
+                          <td>{err.row_index}</td>
+                          <td>{err.raw_value}</td>
+                          <td>{err.error_message}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">
+          資產清冊
+          <div className="spacer" />
+          <span className="muted small">篩選:</span>
+          <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+            <option value="all">全部</option>
+            <option value="alive">存活</option>
+            <option value="dead">不存活/未檢測</option>
+          </select>
+          <a
+            className="btn-sm"
+            href={`${API_BASE_URL}/workspaces/${workspaceId}/assets/export${exportQuery}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            匯出
+          </a>
+          <button className="btn-sm" onClick={loadAssets}>
+            重新整理
+          </button>
+        </div>
+        <div className="card-body">
+          <div className="table-wrap table-scroll">
+            <table className="table">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>原始值</th>
-                  <th>錯誤原因</th>
+                  <th>URL</th>
+                  <th>存活</th>
+                  <th>最後檢測時間</th>
                 </tr>
               </thead>
               <tbody>
-                {summary.errors.map((err) => (
-                  <tr key={err.row_index}>
-                    <td>{err.row_index}</td>
-                    <td>{err.raw_value}</td>
-                    <td>{err.error_message}</td>
+                {assets.map((a) => (
+                  <tr key={a.id}>
+                    <td className="cell-main">{a.normalized_url}</td>
+                    <td>
+                      {a.last_alive === null ? (
+                        <span className="muted small">未檢測</span>
+                      ) : a.last_alive ? (
+                        <span className="text-ok small">存活</span>
+                      ) : (
+                        <span className="text-err small">不存活</span>
+                      )}
+                    </td>
+                    <td className="muted small nowrap">{fmtTime(a.last_checked_at)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
+          </div>
+          <p className="muted small" style={{ marginTop: '8px' }}>
+            要對這些資產跑檢測工具，請從左側選單切到 Liveness / Dirsearch / Git-dump / WhatWeb 頁面。
+          </p>
         </div>
-      )}
-
-      <hr style={{ margin: '1.5rem 0' }} />
-
-      <h2>資產清冊</h2>
-      <div>
-        篩選:{' '}
-        <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-          <option value="all">全部</option>
-          <option value="alive">存活</option>
-          <option value="dead">不存活/未檢測</option>
-        </select>{' '}
-        <a href={`${API_BASE_URL}/workspaces/${workspaceId}/assets/export${exportQuery}`} target="_blank" rel="noreferrer">
-          匯出
-        </a>{' '}
-        <button onClick={loadAssets}>重新整理</button>
       </div>
-      <table border="1" cellPadding="4" style={{ marginTop: '0.5rem', width: '100%' }}>
-        <thead>
-          <tr>
-            <th>URL</th>
-            <th>存活</th>
-            <th>最後檢測時間</th>
-          </tr>
-        </thead>
-        <tbody>
-          {assets.map((a) => (
-            <tr key={a.id}>
-              <td>{a.normalized_url}</td>
-              <td>{a.last_alive === null ? '未檢測' : a.last_alive ? '存活' : '不存活'}</td>
-              <td>{a.last_checked_at ?? '-'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p style={{ color: '#888', fontSize: '0.85rem' }}>
-        要對這些資產跑檢測工具,請到上方導覽列切到 Liveness / Dirsearch / Git-dump / WhatWeb 頁面。
-      </p>
     </div>
   )
 }

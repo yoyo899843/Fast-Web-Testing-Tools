@@ -28,6 +28,8 @@ export default function SqlmapPage() {
 
   useEffect(() => {
     loadJobs()
+    const timer = setInterval(loadJobs, 5000)
+    return () => clearInterval(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId])
 
@@ -82,101 +84,133 @@ export default function SqlmapPage() {
 
   return (
     <div>
-      <h2>SQLMap 注入測試</h2>
-
-      <div style={{ marginBottom: '0.5rem' }}>
-        <label>
-          <input type="radio" checked={mode === 'get'} onChange={() => switchMode('get')} /> GET URL
-        </label>{' '}
-        <label>
-          <input type="radio" checked={mode === 'post'} onChange={() => switchMode('post')} /> POST 原始請求
-        </label>
+      <div className="page-header">
+        <h1 className="page-title">SQLMap 注入測試</h1>
+        <span className="page-desc">貼上 GET URL 或 POST 原始請求，解析參數後對指定參數跑 sqlmap</span>
       </div>
 
-      {mode === 'get' ? (
-        <input
-          type="text"
-          placeholder={GET_PLACEHOLDER}
-          value={raw}
-          onChange={(e) => setRaw(e.target.value)}
-          style={{ width: '100%', fontFamily: 'monospace' }}
-        />
-      ) : (
-        <textarea
-          placeholder={POST_PLACEHOLDER}
-          value={raw}
-          onChange={(e) => setRaw(e.target.value)}
-          rows={10}
-          style={{ width: '100%', fontFamily: 'monospace' }}
-        />
-      )}
+      <div className="card">
+        <div className="card-title">目標請求</div>
+        <div className="card-body">
+          <div className="toolbar" style={{ marginBottom: '10px' }}>
+            <label className="form-check">
+              <input type="radio" checked={mode === 'get'} onChange={() => switchMode('get')} /> GET URL
+            </label>
+            <label className="form-check">
+              <input type="radio" checked={mode === 'post'} onChange={() => switchMode('post')} /> POST 原始請求
+            </label>
+          </div>
 
-      <div style={{ marginTop: '0.5rem' }}>
-        <button onClick={parseTarget} disabled={!raw.trim()}>
-          解析參數
-        </button>
-        {parseError && <span style={{ color: '#e53935', marginLeft: '0.5rem' }}>{parseError}</span>}
+          {mode === 'get' ? (
+            <input
+              type="text"
+              placeholder={GET_PLACEHOLDER}
+              value={raw}
+              onChange={(e) => setRaw(e.target.value)}
+              className="mono"
+              style={{ width: '100%' }}
+            />
+          ) : (
+            <textarea
+              placeholder={POST_PLACEHOLDER}
+              value={raw}
+              onChange={(e) => setRaw(e.target.value)}
+              rows={10}
+              className="mono"
+              style={{ width: '100%' }}
+            />
+          )}
+
+          <div className="form-actions">
+            <button className="btn-primary" onClick={parseTarget} disabled={!raw.trim()}>
+              解析參數
+            </button>
+            {parseError && <span className="text-err small">{parseError}</span>}
+          </div>
+        </div>
       </div>
 
       {parsed && (
-        <div style={{ marginTop: '1rem' }}>
-          <h3>選擇要注入的參數</h3>
-          <p>目標: {parsed.target}</p>
-          {parsed.params.length === 0 ? (
-            <p>未在此請求中找到任何參數。</p>
-          ) : (
-            parsed.params.map((p) => (
-              <label key={p} style={{ marginRight: '1rem' }}>
-                <input type="checkbox" checked={selectedParams.has(p)} onChange={() => toggleParam(p)} /> {p}
-              </label>
-            ))
-          )}
-
-          <div style={{ marginTop: '1rem' }}>
-            <h3>設定</h3>
-            <label>
-              Risk (1-3){' '}
-              <input
-                type="number"
-                min={1}
-                max={3}
-                value={config.risk}
-                onChange={(e) => setConfig({ ...config, risk: Number(e.target.value) })}
-              />
-            </label>{' '}
-            <label>
-              Level (1-5){' '}
-              <input
-                type="number"
-                min={1}
-                max={5}
-                value={config.level}
-                onChange={(e) => setConfig({ ...config, level: Number(e.target.value) })}
-              />
-            </label>{' '}
-            {mode === 'post' && (
-              <label>
-                <input
-                  type="checkbox"
-                  checked={config.https}
-                  onChange={(e) => setConfig({ ...config, https: e.target.checked })}
-                />{' '}
-                使用 HTTPS
-              </label>
-            )}
+        <div className="cols cols-2">
+          <div className="card">
+            <div className="card-title">選擇要注入的參數</div>
+            <div className="card-body">
+              <p className="small" style={{ marginBottom: '10px' }}>
+                目標: <span className="mono">{parsed.target}</span>
+              </p>
+              {parsed.params.length === 0 ? (
+                <div className="empty">未在此請求中找到任何參數。</div>
+              ) : (
+                <div className="toolbar">
+                  {parsed.params.map((p) => (
+                    <label key={p} className="form-check">
+                      <input type="checkbox" checked={selectedParams.has(p)} onChange={() => toggleParam(p)} />
+                      <span className="mono">{p}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div style={{ marginTop: '0.5rem' }}>
-            <button onClick={start} disabled={selectedParams.size === 0}>
-              對選取的 {selectedParams.size} 個參數開始 SQLMap 掃描
-            </button>
+          <div className="card">
+            <div className="card-title">掃描設定</div>
+            <div className="card-body">
+              <div className="form-row">
+                <div className="field">
+                  <span className="field-label">Risk (1-3)</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={3}
+                    value={config.risk}
+                    onChange={(e) => setConfig({ ...config, risk: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="field">
+                  <span className="field-label">Level (1-5)</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={config.level}
+                    onChange={(e) => setConfig({ ...config, level: Number(e.target.value) })}
+                  />
+                </div>
+                {mode === 'post' && (
+                  <label className="form-check" style={{ paddingBottom: '8px' }}>
+                    <input
+                      type="checkbox"
+                      checked={config.https}
+                      onChange={(e) => setConfig({ ...config, https: e.target.checked })}
+                    />
+                    使用 HTTPS
+                  </label>
+                )}
+              </div>
+              <div className="form-actions">
+                <button className="btn-primary" onClick={start} disabled={selectedParams.size === 0}>
+                  對選取的 {selectedParams.size} 個參數開始掃描
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      <h3 style={{ marginTop: '1.5rem' }}>歷史紀錄</h3>
-      <button onClick={loadJobs}>重新整理</button>
-      <JobHistoryList jobs={jobs} />
+      <div className="card">
+        <div className="card-title">
+          歷史紀錄
+          <div className="spacer" />
+          <span className="muted small">每 5 秒自動更新</span>
+          <button className="btn-sm" onClick={loadJobs}>
+            重新整理
+          </button>
+        </div>
+        <div className="card-body">
+          <JobHistoryList jobs={jobs} />
+        </div>
+      </div>
     </div>
   )
 }

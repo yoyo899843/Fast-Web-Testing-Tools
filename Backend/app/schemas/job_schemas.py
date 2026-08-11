@@ -14,6 +14,7 @@ class LivenessJobRequest(BaseModel):
 
 class JobResponse(BaseModel):
     id: int
+    workspace_id: int
     type: str
     status: str
     progress_total: int
