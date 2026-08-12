@@ -1,0 +1,3 @@
+[submodule "tools/tools/php-cgi-Injector"]
+	path = tools/tools/php-cgi-Injector
+	url = https://github.com/Night-have-dreams/php-cgi-Injector
