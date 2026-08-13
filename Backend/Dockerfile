@@ -22,7 +22,9 @@ COPY requirements.txt .
 # image only ever runs this one app, so --break-system-packages is the
 # accepted way to install into it directly instead of a venv.
 RUN pip install --no-cache-dir --break-system-packages -r requirements.txt \
-    && pip install --no-cache-dir --break-system-packages git-dumper
+    && pip install --no-cache-dir --break-system-packages git-dumper \
+    # Python deps for scripts under tools/ (e.g. php-cgi-Injector); not app deps.
+    && pip install --no-cache-dir --break-system-packages requests rich chardet requests-tor
 
 COPY app ./app
 

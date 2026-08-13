@@ -200,7 +200,7 @@ export default function DirsearchResultsPanel({ jobId }) {
         const hot = rows.filter((r) => r._rule?.level === 'high').length
         const warm = rows.filter((r) => r._rule?.level === 'med').length
         return (
-          <details key={targetUrl} className="group" open>
+          <details key={targetUrl} className="group">
             <summary>
               <span className="mono" style={{ fontSize: '12.5px' }}>
                 {targetUrl}
