@@ -93,7 +93,7 @@ app/
 - `reconcile_interrupted_jobs()`：啟動時把殘留 `running` 的 job 標 `interrupted`（registry 是記憶體狀態，重啟後這些 job 永遠不會再動）。
 
 **`subprocess_job.py`**
-- `await run_subprocess(cmd: list[str], ctx, label) -> returncode`：合併 stderr 進 stdout；**手切 `\r`/`\n`**（dirsearch 只用 `\r` 刷進度列，readline 會爆 64KB limit 炸掉整個 job——實際踩過）；每行 log 前綴 `[label]`；`start_new_session=True` 拿獨立 pgid，cancel 時 `terminate_process_group` 整組殺。
+- `await run_subprocess(cmd: list[str], ctx, label, timeout: float|None=None) -> returncode`：合併 stderr 進 stdout；**手切 `\r`/`\n`**（dirsearch 只用 `\r` 刷進度列，readline 會爆 64KB limit 炸掉整個 job——實際踩過）；每行 log 前綴 `[label]`；`start_new_session=True` 拿獨立 pgid，cancel 時 `terminate_process_group` 整組殺；給了 `timeout` 則單次呼叫超時也用同一套 kill 流程收掉（每次呼叫各自計時，不是整個 job 的總時限）。dirsearch 用它做「單一目標逾時換下一個」（見 §3.8）。
 - `await run_per_target(ctx, assets, target_concurrency, handle_target)`：`handle_target(asset) -> bool`（成功與否）的併發迴圈 + done/success/fail 進度統計；**結果入庫是 handle_target 自己的責任**。dirsearch / git-dump / whatweb 都用它。liveness 不用（需要 per-asset rate limiter，自己手刻）。
 
 **DB 存取模式（全專案一致，必須遵守）**
@@ -136,7 +136,7 @@ strip → 拒絕空白/控制字元 → 無 scheme 補 `http://` → 只允許 h
 | GET `/workspaces/{id}/assets?alive=true|false` | 清冊（alive 篩的是 last_alive 快取） |
 | GET `/workspaces/{id}/assets/export?alive=` | text/plain，一行一個 normalized_url |
 | POST `/workspaces/{id}/jobs/liveness` | `{asset_ids*, concurrency=10, timeout=10, retries=0, rps=5}`；asset_ids 空 → 400 |
-| POST `/workspaces/{id}/jobs/dirsearch` | `{asset_ids*, target_concurrency=2, threads=25, exclude_status="403,500"}` |
+| POST `/workspaces/{id}/jobs/dirsearch` | `{asset_ids*, target_concurrency=2, threads=25, exclude_status="403,500", per_target_timeout=180}` |
 | POST `/workspaces/{id}/jobs/git-dump` | `{asset_ids*, target_concurrency=2}` |
 | POST `/workspaces/{id}/jobs/whatweb` | `{asset_ids*, target_concurrency=5, aggression=1}` |
 | GET `/workspaces/{id}/jobs?type=` | 列表，新→舊 |
@@ -168,7 +168,7 @@ strip → 拒絕空白/控制字元 → 無 scheme 補 `http://` → 只允許 h
 | type | 執行方式 | 解析與入庫 | 副作用 |
 |---|---|---|---|
 | `liveness` | httpx.AsyncClient（follow_redirects, verify=True），自刻 semaphore + `AsyncLimiter(rps, 1)` | GET 每個 asset；HTML 才抓 `<title>`（前 64KB regex）；錯誤分類：timeout→error_message="timeout"、SSL→tls_error、其他→error_message（**tls_error 與 error_message 互斥**）；retries 用完才算 unreachable | 同時更新 asset 的 last_alive 快取 |
-| `dirsearch` | `dirsearch -u <url> --format json -o <tmp> -x <exclude> -t <threads> --no-color` | 解析 tmp JSON 的 `results[]`；**report 檔不存在 = 沒找到東西，不是錯誤**（dirsearch 校準後無結果就不產檔） | 無 |
+| `dirsearch` | `dirsearch -u <url> --format json -o <tmp> -x <exclude> -t <threads> --no-color`；每個目標透過 `run_subprocess(..., timeout=per_target_timeout)` 跑，預設 180 秒（3 分鐘），逾時就 kill 掉該目標的行程並直接算這個目標失敗、換下一個，不影響其他目標或整個 job | 解析 tmp JSON 的 `results[]`；**report 檔不存在 = 沒找到東西，不是錯誤**（dirsearch 校準後無結果就不產檔）；逾時被砍可能留下不完整/壞掉的 JSON，解析失敗時比照「無結果」處理，不會讓整個 job 炸掉 | 無 |
 | `git-dump` | 先 httpx GET `<url>/.git/HEAD`，200 且內容 `ref:` 開頭才算暴露；暴露才跑 `git-dumper <url>/.git/ <dump_path>` | 成功後 os.walk 算 file_count/size | dump 存到 `DATA_DIR/git_dumps/<job_id>/<asset_id>/` |
 | `whatweb` | `whatweb --color=never --aggression <n> --log-json=<tmp> <url>` | 取 JSON `data[0]` 的 `http_status` 與 `plugins`；returncode≠0 → error_message="whatweb exited with code N"（**目標掛了也是 returncode 0 + plugins 空**，前端要處理空 plugins） | 無 |
 

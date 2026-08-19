@@ -9,6 +9,7 @@ class DirsearchJobRequest(BaseModel):
     target_concurrency: int = 2
     threads: int = 25
     exclude_status: str = "403,500"
+    per_target_timeout: int = 180
 
 
 class DirsearchResultResponse(BaseModel):

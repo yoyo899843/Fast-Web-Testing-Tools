@@ -38,6 +38,7 @@ async def create_dirsearch_job(workspace_id: int, payload: DirsearchJobRequest) 
             "target_concurrency": payload.target_concurrency,
             "threads": payload.threads,
             "exclude_status": payload.exclude_status,
+            "per_target_timeout": payload.per_target_timeout,
         },
         payload.asset_ids,
     )

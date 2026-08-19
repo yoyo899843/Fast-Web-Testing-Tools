@@ -29,7 +29,13 @@ def _parse_report(path: str, job_id: int, asset_id: int) -> list[DirsearchResult
         # not an error.
         return []
     with open(path) as f:
-        data = json.load(f)
+        try:
+            data = json.load(f)
+        except ValueError:
+            # A target killed mid-scan (e.g. per-target timeout) can leave a
+            # truncated/partial report file - treat that like "nothing found"
+            # rather than failing the whole job.
+            return []
     results = []
     for entry in data.get("results", []):
         url = entry.get("url", "")
@@ -64,13 +70,15 @@ async def run_dirsearch_job(job: Job, ctx: JobContext) -> None:
         "target_concurrency": max(1, int(params.get("target_concurrency", 2))),
         "threads": max(1, int(params.get("threads", 25))),
         "exclude_status": str(params.get("exclude_status", "403,500")),
+        "per_target_timeout": max(1, int(params.get("per_target_timeout", 180))),
     }
     asset_ids = json.loads(job.target_asset_ids_json or "[]")
     assets = await asyncio.to_thread(_load_assets, asset_ids)
 
     await ctx.log(
         f"Dirsearch scanning {len(assets)} target(s), {cfg['target_concurrency']} at a time, "
-        f"{cfg['threads']} threads each, excluding status {cfg['exclude_status']}"
+        f"{cfg['threads']} threads each, excluding status {cfg['exclude_status']}, "
+        f"per-target timeout {cfg['per_target_timeout']}s"
     )
 
     async def _handle(asset: Asset) -> bool:
@@ -87,7 +95,7 @@ async def run_dirsearch_job(job: Job, ctx: JobContext) -> None:
             "-t", str(cfg["threads"]),
             "--no-color",
         ]
-        returncode = await run_subprocess(cmd, ctx, asset.normalized_url)
+        returncode = await run_subprocess(cmd, ctx, asset.normalized_url, timeout=cfg["per_target_timeout"])
 
         results = await asyncio.to_thread(_parse_report, output_path, job.id, asset.id)
         await asyncio.to_thread(_persist_results, results)

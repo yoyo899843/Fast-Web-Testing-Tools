@@ -37,13 +37,17 @@ async def _stream_subprocess_output(proc: "asyncio.subprocess.Process", ctx: Job
                 await ctx.log(f"[{label}] {text}")
 
 
-async def run_subprocess(cmd: list[str], ctx: JobContext, label: str) -> int:
+async def run_subprocess(cmd: list[str], ctx: JobContext, label: str, timeout: float | None = None) -> int:
     """Run one cancellable subprocess, streaming its output into the job log.
 
     Returns the process's exit code (negative if killed by signal). Respects
     ctx.cancel_event: if set while the subprocess is still running, escalates
     SIGTERM -> SIGKILL against its whole process group (see proc_utils) rather
-    than assuming a single signal is enough.
+    than assuming a single signal is enough. If `timeout` elapses before the
+    subprocess finishes, it is killed the same way (this is per-invocation,
+    not per-job: callers looping over multiple targets - e.g. run_per_target -
+    use this to bound a single target's runtime so a hung one doesn't stall
+    the rest).
     """
     await ctx.log(f"$ {' '.join(cmd)}")
     proc = await asyncio.create_subprocess_exec(
@@ -56,14 +60,21 @@ async def run_subprocess(cmd: list[str], ctx: JobContext, label: str) -> int:
     stream_task = asyncio.create_task(_stream_subprocess_output(proc, ctx, label))
     wait_task = asyncio.create_task(proc.wait())
     cancel_task = asyncio.create_task(ctx.cancel_event.wait())
+    timeout_task = asyncio.create_task(asyncio.sleep(timeout)) if timeout is not None else None
 
-    await asyncio.wait({wait_task, cancel_task}, return_when=asyncio.FIRST_COMPLETED)
+    wait_set = {wait_task, cancel_task} | ({timeout_task} if timeout_task is not None else set())
+    await asyncio.wait(wait_set, return_when=asyncio.FIRST_COMPLETED)
     if not wait_task.done():
-        await ctx.log(f"Cancelling: {label}", level="warn")
+        if timeout_task is not None and timeout_task.done():
+            await ctx.log(f"Timed out after {timeout:.0f}s, skipping: {label}", level="warn")
+        else:
+            await ctx.log(f"Cancelling: {label}", level="warn")
         await terminate_process_group(proc.pid)
         await wait_task
     else:
         cancel_task.cancel()
+        if timeout_task is not None:
+            timeout_task.cancel()
     await stream_task
 
     return proc.returncode

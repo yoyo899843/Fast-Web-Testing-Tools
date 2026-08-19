@@ -8,7 +8,12 @@ export default function DirsearchPage() {
   const { workspaceId } = useParams()
   const navigate = useNavigate()
   const [selected, setSelected] = useState(new Set())
-  const [config, setConfig] = useState({ target_concurrency: 2, threads: 25, exclude_status: '403,500' })
+  const [config, setConfig] = useState({
+    target_concurrency: 2,
+    threads: 25,
+    exclude_status: '403,500',
+    per_target_timeout: 180,
+  })
   const [jobs, setJobs] = useState([])
 
   async function loadJobs() {
@@ -76,6 +81,14 @@ export default function DirsearchPage() {
                   style={{ width: '140px' }}
                   value={config.exclude_status}
                   onChange={(e) => setConfig({ ...config, exclude_status: e.target.value })}
+                />
+              </div>
+              <div className="field">
+                <span className="field-label">單一目標逾時（秒）</span>
+                <input
+                  type="number"
+                  value={config.per_target_timeout}
+                  onChange={(e) => setConfig({ ...config, per_target_timeout: Number(e.target.value) })}
                 />
               </div>
             </div>
